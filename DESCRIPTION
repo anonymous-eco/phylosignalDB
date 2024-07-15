@@ -1,0 +1,32 @@
+Package: phylosignalDB
+Title: Explore Phylogenetic Signals Using Distance-Based Methods
+Version: 0.0.0.9000
+Authors@R: c(
+    person("Liang", "Yao", email = "dylanyao@126.com", role = c("aut", "cre"), comment = c(ORCID = "0000-0002-7305-7978")),
+    person("Ye", "Yuan", email = "yuanye_1985@126.com", role = "aut", comment = c(ORCID = "0000-0001-7638-8097")))
+Description: A unified method, called M statistic, is provided for detecting phylogenetic signals 
+    in continuous traits, discrete traits, and multi-trait combinations.
+    Blomberg and Garland (2002) provided a widely accepted statistical definition of the 
+    phylogenetic signal, which is the "tendency for related species to resemble each other 
+    more than they resemble species drawn at random from the tree".
+    The M statistic strictly adheres to the definition of phylogenetic signal, 
+    formulating an index and developing a method of testing in strict accordance 
+    with the definition, instead of relying on correlation analysis or evolutionary models.
+    The novel method equivalently expressed the textual definition of the phylogenetic signal 
+    as an inequality equation of the phylogenetic and trait distances and constructed the M statistic.
+    For more details, please refer to Yao & Yuan (2024). 
+    Also, there are more distance-based methods under development.
+License: GPL (>= 3)
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.1
+Depends: 
+    R (>= 4.0)
+LazyData: true
+Imports: 
+    ape (>= 5.7),
+    cluster (>= 2.1.6),
+    foreach (>= 1.5.2),
+    methods,
+    phylobase (>= 0.8.12),
+    stats
