@@ -30,3 +30,5 @@ Imports:
     methods,
     phylobase (>= 0.8.12),
     stats
+URL: https://github.com/Dylan-Yao/phylosignalDB
+BugReports: https://github.com/Dylan-Yao/phylosignalDB/issues
