@@ -14,10 +14,11 @@
 #' turtles
 #' data("turtles")
 #' @format
-#' `turtles` is a list object with 3 components:
+#' `turtles` is a list object with 4 components:
 #' \describe{
 #'   \item{traits}{The ecological traits of turtles as an object of class `data.frame`/`tibble`. }
 #'   \item{phylo}{The phylogeny of turtles as an object of class `phylo`.}
+#'   \item{phylo4}{The phylogeny of turtles as an object of class `phylo4`.}
 #'   \item{traits_info}{The full names and id of ecological traits.}
 #'   More details in Oskyrko et al. (2024) and Thomson et al. (2021).
 #' }

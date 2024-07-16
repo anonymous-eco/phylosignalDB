@@ -43,31 +43,30 @@ data("turtles")
 # Continuous trait
 trait_df <- data.frame(M1 = turtles$traits$M1, row.names = turtles$traits$specie)
 trait_dist <- gower_dist(x = trait_df)
-M_rand_perm(trait_dist, turtles$phylo, reps = 99)
+M_rand_perm(trait_dist, turtles$phylo4, reps = 99) # reps=999 better
 
 # Nominal discrete trait
 trait_df <- data.frame(B1 = turtles$traits$B1, row.names = turtles$traits$specie)
 trait_dist <- gower_dist(x = trait_df, type = list(factor = 1))
-M_rand_perm(trait_dist, turtles$phylo, reps = 99)
+M_rand_perm(trait_dist, turtles$phylo4, reps = 99) # reps=999 better
 
 # Ordinal discrete trait
 trait_df <- data.frame(CS1 = turtles$traits$CS1, row.names = turtles$traits$specie)
 trait_dist <- gower_dist(x = trait_df, type = list(ordered = 1))
-M_rand_perm(trait_dist, turtles$phylo, reps = 99)
+M_rand_perm(trait_dist, turtles$phylo4, reps = 99) # reps=999 better
 
 # Multi-trait Combinations
 trait_df <- data.frame(turtles$traits[, c("M1", "M2", "M3", "M4", "M5")],
                        row.names = turtles$traits$specie)
 trait_dist <- gower_dist(x = trait_df, type = list(factor = c("M4", "M5")))
-M_rand_perm(trait_dist, turtles$phylo, reps = 99)
+M_rand_perm(trait_dist, turtles$phylo4, reps = 99) # reps=999 better
 
 }
 \references{
-Yao, L. & Yuan, Y. (2024) A unified method for detecting phylogenetic signals in continuous traits,
-discrete traits, and multi-trait combinations. (manuscript)
-
 Blomberg, S.P. & Garland, T., Jr (2002) Tempo and mode in evolution: phylogenetic inertia,
 adaptation and comparative methods. Journal of Evolutionary Biology, 15(6): 899-910.
+Yao, L. & Yuan, Y. (2024) A unified method for detecting phylogenetic signals in continuous traits,
+discrete traits, and multi-trait combinations. (manuscript)
 }
 \seealso{
 \code{\link[=M_stat]{M_stat()}} \code{\link[=phylosignal_M]{phylosignal_M()}}

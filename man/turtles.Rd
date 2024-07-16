@@ -5,10 +5,11 @@
 \alias{turtles}
 \title{Ecological Traits and Phylogeny of Turtles}
 \format{
-\code{turtles} is a list object with 3 components:
+\code{turtles} is a list object with 4 components:
 \describe{
 \item{traits}{The ecological traits of turtles as an object of class \code{data.frame}/\code{tibble}. }
 \item{phylo}{The phylogeny of turtles as an object of class \code{phylo}.}
+\item{phylo4}{The phylogeny of turtles as an object of class \code{phylo4}.}
 \item{traits_info}{The full names and id of ecological traits.}
 More details in Oskyrko et al. (2024) and Thomson et al. (2021).
 }

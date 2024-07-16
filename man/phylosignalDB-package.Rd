@@ -8,6 +8,14 @@
 \description{
 A unified method, called M statistic, is provided for detecting phylogenetic signals in continuous traits, discrete traits, and multi-trait combinations. Blomberg and Garland (2002) provided a widely accepted statistical definition of the phylogenetic signal, which is the "tendency for related species to resemble each other more than they resemble species drawn at random from the tree". The M statistic strictly adheres to the definition of phylogenetic signal, formulating an index and developing a method of testing in strict accordance with the definition, instead of relying on correlation analysis or evolutionary models. The novel method equivalently expressed the textual definition of the phylogenetic signal as an inequality equation of the phylogenetic and trait distances and constructed the M statistic. For more details, please refer to Yao & Yuan (2024). Also, there are more distance-based methods under development.
 }
+\seealso{
+Useful links:
+\itemize{
+  \item \url{https://github.com/Dylan-Yao/phylosignalDB}
+  \item Report bugs at \url{https://github.com/Dylan-Yao/phylosignalDB/issues}
+}
+
+}
 \author{
 \strong{Maintainer}: Liang Yao \email{dylanyao@126.com} (\href{https://orcid.org/0000-0002-7305-7978}{ORCID})
 
