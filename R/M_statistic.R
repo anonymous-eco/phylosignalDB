@@ -104,7 +104,6 @@ M_stat <- function(trait_dist = NULL, phy = NULL, auto_multi2di = TRUE){
   if (length(phy)*length(trait_dist) == 0) {
     stop("The 'phy' and 'trait_dist' cannot be NULL.")
   }
-  data_dist <- trait_dist # Create a copy of trait_dist named data_dist.
   if (TRUE %in% (c("phylo", "phylo4", "phylo4d") %in% class(phy))) {
     phy <- as(phy, "phylo4")
   } else {
@@ -124,10 +123,18 @@ M_stat <- function(trait_dist = NULL, phy = NULL, auto_multi2di = TRUE){
       stop("The 'phy' tree contains some polytomies. Function multi2di() in ape package maybe helpful. You also can set 'auto_multi2di' to be TRUE.")
     }
   }
-  S <- phylobase::nTips(phy)
+  # Deal with the NA values in trait_dist/data_dist
+  data_dist <- as.matrix(trait_dist) # Create a copy of trait_dist named data_dist.
+  diag(data_dist) <- 0 # The diagonal values are equal to zero.
+  row_col_narm <- (colSums(data_dist, na.rm = TRUE) > 0)
+  data_dist <- data_dist[row_col_narm, row_col_narm]
+  # Prune the phylogenetic tree
   label_vec <- phylobase::tipLabels(phy)
+  tips_keep <- label_vec[label_vec %in% rownames(data_dist)]
+  phy <- phylobase::subset(phy, tips.include = tips_keep)
+  S <- phylobase::nTips(phy)
+  label_vec <- phylobase::tipLabels(phy) # update the tip labels
   # Sort data_dist/trait_dist by the naming and numbering according to phy's tips.
-  data_dist <- as.matrix(data_dist)
   data_dist <- data_dist[label_vec, label_vec]
   # Create an index list of internal nodes.
   internal_nodes <- phylobase::getNode(phy, type = "internal")
@@ -161,11 +168,11 @@ M_stat <- function(trait_dist = NULL, phy = NULL, auto_multi2di = TRUE){
   }
   N_subtree <- length(rootnodes_subtree)
   # Assign equal weight to each subtree.
-  w_vec <- rep(1/N_subtree, N_subtree)
-  subtree_scores_0 <- rootnodes_subtree - rootnodes_subtree
+  # w_vec <- rep(1/N_subtree, N_subtree)
+  # subtree_scores_0 <- rootnodes_subtree - rootnodes_subtree
   # Calculate the M value of the observed sample data.
   i <- NULL
-  M_obs <- foreach::foreach(i=1:N_subtree, .combine="+") %do% {
+  M_subtree <- foreach::foreach(i=1:N_subtree, .combine="c") %do% {
     temp_node_info <- nodes_info[[as.character(rootnodes_subtree[i])]]
     dist_child1 <- as.vector(as.dist(data_dist[temp_node_info$child_tipsid_1left,
                                                temp_node_info$child_tipsid_1left]))
@@ -173,13 +180,18 @@ M_stat <- function(trait_dist = NULL, phy = NULL, auto_multi2di = TRUE){
                                                temp_node_info$child_tipsid_2right]))
     dist_mix <- as.vector(data_dist[temp_node_info$child_tipsid_1left,
                                     temp_node_info$child_tipsid_2right])
-    average_child1 <- ifelse(length(dist_child1) > 0, mean(dist_child1), 0)
-    average_child2 <- ifelse(length(dist_child2) > 0, mean(dist_child2), 0)
-    average_mix <- mean(dist_mix)
-    subtree_score <- ifelse(average_mix >= average_child1, 0.5, 0) +
-      ifelse(average_mix >= average_child2, 0.5, 0)
-    subtree_score*w_vec[i]
+    average_child1 <- ifelse(length(dist_child1) > 0, mean(dist_child1, na.rm = TRUE), 0)
+    average_child2 <- ifelse(length(dist_child2) > 0, mean(dist_child2, na.rm = TRUE), 0)
+    average_mix <- mean(dist_mix, na.rm = TRUE)
+    if (TRUE %in% is.na(c(average_child1, average_child2, average_mix))) {
+      subtree_score <- NULL # The subtree is invalid, too much NA values.
+    } else {
+      subtree_score <- ifelse(average_mix >= average_child1, 0.5, 0) +
+                       ifelse(average_mix >= average_child2, 0.5, 0)
+    }
+    subtree_score
   }
+  M_obs <- mean(M_subtree, na.rm = TRUE)
   names(M_obs) <- "M_stat"
   return(M_obs)
 }
@@ -245,7 +257,6 @@ M_rand_perm <- function(trait_dist = NULL, phy = NULL, reps = 999, auto_multi2di
   if (length(phy)*length(trait_dist) == 0) {
     stop("The 'phy' and 'trait_dist' cannot be NULL.")
   }
-  data_dist <- trait_dist # Create a copy of trait_dist named data_dist.
   if ((!is.numeric(reps))) {
     stop("The 'reps' must be a positive integer.")
   } else if (reps < 1) {
@@ -272,10 +283,18 @@ M_rand_perm <- function(trait_dist = NULL, phy = NULL, reps = 999, auto_multi2di
       stop("The 'phy' tree contains some polytomies. Function multi2di() in ape package maybe helpful. You also can set 'auto_multi2di' to be TRUE.")
     }
   }
-  S <- phylobase::nTips(phy)
+  # Deal with the NA values in trait_dist/data_dist
+  data_dist <- as.matrix(trait_dist) # Create a copy of trait_dist named data_dist.
+  diag(data_dist) <- 0 # The diagonal values are equal to zero.
+  row_col_narm <- (colSums(data_dist, na.rm = TRUE) > 0)
+  data_dist <- data_dist[row_col_narm, row_col_narm]
+  # Prune the phylogenetic tree
   label_vec <- phylobase::tipLabels(phy)
+  tips_keep <- label_vec[label_vec %in% rownames(data_dist)]
+  phy <- phylobase::subset(phy, tips.include = tips_keep)
+  S <- phylobase::nTips(phy)
+  label_vec <- phylobase::tipLabels(phy) # update the tip labels
   # Sort data_dist/trait_dist by the naming and numbering according to phy's tips
-  data_dist <- as.matrix(data_dist)
   data_dist <- data_dist[label_vec, label_vec]
   # Create an index list of internal nodes
   internal_nodes <- phylobase::getNode(phy, type = "internal")
@@ -309,11 +328,11 @@ M_rand_perm <- function(trait_dist = NULL, phy = NULL, reps = 999, auto_multi2di
   }
   N_subtree <- length(rootnodes_subtree)
   # Assign equal weight to each subtree.
-  w_vec <- rep(1/N_subtree, N_subtree)
-  subtree_scores_0 <- rootnodes_subtree - rootnodes_subtree
+  # w_vec <- rep(1/N_subtree, N_subtree)
+  # subtree_scores_0 <- rootnodes_subtree - rootnodes_subtree
   # Calculate the M value of the observed sample data.
   i <- NULL
-  M_obs <- foreach::foreach(i=1:N_subtree, .combine="+") %do% {
+  M_obs_subtree <- foreach::foreach(i=1:N_subtree, .combine="c") %do% {
     temp_node_info <- nodes_info[[as.character(rootnodes_subtree[i])]]
     dist_child1 <- as.vector(as.dist(data_dist[temp_node_info$child_tipsid_1left,
                                                temp_node_info$child_tipsid_1left]))
@@ -321,20 +340,25 @@ M_rand_perm <- function(trait_dist = NULL, phy = NULL, reps = 999, auto_multi2di
                                                temp_node_info$child_tipsid_2right]))
     dist_mix <- as.vector(data_dist[temp_node_info$child_tipsid_1left,
                                     temp_node_info$child_tipsid_2right])
-    average_child1 <- ifelse(length(dist_child1) > 0, mean(dist_child1), 0)
-    average_child2 <- ifelse(length(dist_child2) > 0, mean(dist_child2), 0)
-    average_mix <- mean(dist_mix)
-    subtree_score <- ifelse(average_mix >= average_child1, 0.5, 0) +
-      ifelse(average_mix >= average_child2, 0.5, 0)
-    subtree_score*w_vec[i]
+    average_child1 <- ifelse(length(dist_child1) > 0, mean(dist_child1, na.rm = TRUE), 0)
+    average_child2 <- ifelse(length(dist_child2) > 0, mean(dist_child2, na.rm = TRUE), 0)
+    average_mix <- mean(dist_mix, na.rm = TRUE)
+    if (TRUE %in% is.na(c(average_child1, average_child2, average_mix))) {
+      subtree_score <- NULL # The subtree is invalid, too much NA values.
+    } else {
+      subtree_score <- ifelse(average_mix >= average_child1, 0.5, 0) +
+                       ifelse(average_mix >= average_child2, 0.5, 0)
+    }
+    subtree_score
   }
+  M_obs <- mean(M_obs_subtree, na.rm = TRUE)
   # Calculate the simulated M values for random permutations, reps times.
   j <- NULL
   M_reps <- foreach::foreach(j = 1:reps, .combine = "c") %do% {
     each_perm <- sample(1:S, size = S)
     data_dist_perm <- data_dist[each_perm, each_perm]
     kkk <- NULL
-    M_perm <- foreach::foreach(kkk=1:N_subtree, .combine="+") %do% {
+    M_perm_subtree <- foreach::foreach(kkk=1:N_subtree, .combine="c") %do% {
       temp_node_info <- nodes_info[[as.character(rootnodes_subtree[kkk])]]
       dist_child1 <- as.vector(as.dist(data_dist_perm[temp_node_info$child_tipsid_1left,
                                                       temp_node_info$child_tipsid_1left]))
@@ -342,14 +366,18 @@ M_rand_perm <- function(trait_dist = NULL, phy = NULL, reps = 999, auto_multi2di
                                                       temp_node_info$child_tipsid_2right]))
       dist_mix <- as.vector(data_dist_perm[temp_node_info$child_tipsid_1left,
                                            temp_node_info$child_tipsid_2right])
-      average_child1 <- ifelse(length(dist_child1) > 0, mean(dist_child1), 0)
-      average_child2 <- ifelse(length(dist_child2) > 0, mean(dist_child2), 0)
-      average_mix <- mean(dist_mix)
-      subtree_score <- ifelse(average_mix >= average_child1, 0.5, 0) +
-        ifelse(average_mix >= average_child2, 0.5, 0)
-      subtree_score*w_vec[kkk]
+      average_child1 <- ifelse(length(dist_child1) > 0, mean(dist_child1, na.rm = TRUE), 0)
+      average_child2 <- ifelse(length(dist_child2) > 0, mean(dist_child2, na.rm = TRUE), 0)
+      average_mix <- mean(dist_mix, na.rm = TRUE)
+      if (TRUE %in% is.na(c(average_child1, average_child2, average_mix))) {
+        subtree_score <- NULL # The subtree is invalid, too much NA values.
+      } else {
+        subtree_score <- ifelse(average_mix >= average_child1, 0.5, 0) +
+                         ifelse(average_mix >= average_child2, 0.5, 0)
+      }
+      subtree_score
     }
-    M_perm
+    mean(M_perm_subtree, na.rm = TRUE)
   }
   return(list(M_permuted = M_reps,
               M_observed = M_obs))
@@ -451,7 +479,7 @@ phylosignal_M <- function(trait_dist = NULL, phy = NULL, reps = 999,
       stop("The 'phy' tree contains some polytomies. Function multi2di() in ape package maybe helpful. You also can set 'auto_multi2di' to be TRUE.")
     }
   }
-  M_perm <- M_rand_perm(phy = phy, trait_dist = trait_dist,
+  M_perm <- M_rand_perm(trait_dist = trait_dist, phy = phy,
                         reps = reps)
   M_observed <- M_perm$M_observed
   M_permuted <- M_perm$M_permuted
