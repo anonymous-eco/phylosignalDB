@@ -70,11 +70,9 @@ gower_dist <- function(x, type = list(),
 #'    be dichotomous if the tree (`phy`) contains some polytomies.
 #' @returns A value that lies between 0 and 1, inclusive.
 #' @references
-#'    Blomberg, S.P. & Garland, T., Jr (2002) Tempo and mode in evolution: phylogenetic inertia,
-#'    adaptation and comparative methods. Journal of Evolutionary Biology, 15(6): 899-910.
+#'    Blomberg, S.P. & Garland, T., Jr (2002) Tempo and mode in evolution: phylogenetic inertia, adaptation and comparative methods. Journal of Evolutionary Biology, 15(6): 899-910.
 #'
-#'    Yao, L. & Yuan, Y. (2024) A unified method for detecting phylogenetic signals in continuous traits,
-#'    discrete traits, and multi-trait combinations. (manuscript)
+#'    Yao, L. & Yuan, Y. (2024) A unified method for detecting phylogenetic signals in continuous traits, discrete traits, and multi-trait combinations. (manuscript)
 #'
 #' @seealso [M_rand_perm()] [phylosignal_M()]
 #' @examples
@@ -224,11 +222,9 @@ M_stat <- function(trait_dist = NULL, phy = NULL, auto_multi2di = TRUE){
 #'    Component `$permuted` is the vector of M values obtained after random permutation for `reps` times;
 #'    component `$observed` is the value of M statistic obtained from the original input data.
 #' @references
-#'    Blomberg, S.P. & Garland, T., Jr (2002) Tempo and mode in evolution: phylogenetic inertia,
-#'    adaptation and comparative methods. Journal of Evolutionary Biology, 15(6): 899-910.
+#'    Blomberg, S.P. & Garland, T., Jr (2002) Tempo and mode in evolution: phylogenetic inertia, adaptation and comparative methods. Journal of Evolutionary Biology, 15(6): 899-910.
 #'
-#'    Yao, L. & Yuan, Y. (2024) A unified method for detecting phylogenetic signals in continuous traits,
-#'    discrete traits, and multi-trait combinations. (manuscript)
+#'    Yao, L. & Yuan, Y. (2024) A unified method for detecting phylogenetic signals in continuous traits, discrete traits, and multi-trait combinations. (manuscript)
 #'
 #' @seealso [M_stat()] [phylosignal_M()]
 #' @examples
@@ -416,11 +412,9 @@ M_rand_perm <- function(trait_dist = NULL, phy = NULL, reps = 999, auto_multi2di
 #'    Component `$permuted` is the vector of M values obtained after random permutation for `reps` times;
 #'    component `$observed` is the value of M statistic obtained from the original input data.
 #' @references
-#'    Blomberg, S.P. & Garland, T., Jr (2002) Tempo and mode in evolution: phylogenetic inertia,
-#'    adaptation and comparative methods. Journal of Evolutionary Biology, 15(6): 899-910.
+#'    Blomberg, S.P. & Garland, T., Jr (2002) Tempo and mode in evolution: phylogenetic inertia, adaptation and comparative methods. Journal of Evolutionary Biology, 15(6): 899-910.
 #'
-#'    Yao, L. & Yuan, Y. (2024) A unified method for detecting phylogenetic signals in continuous traits,
-#'    discrete traits, and multi-trait combinations. (manuscript)
+#'    Yao, L. & Yuan, Y. (2024) A unified method for detecting phylogenetic signals in continuous traits, discrete traits, and multi-trait combinations. (manuscript)
 #'
 #' @seealso [M_stat()] [M_rand_perm()]
 #' @examples

@@ -58,10 +58,9 @@ M_stat(trait_dist, turtles$phylo4)
 
 }
 \references{
-Blomberg, S.P. & Garland, T., Jr (2002) Tempo and mode in evolution: phylogenetic inertia,
-adaptation and comparative methods. Journal of Evolutionary Biology, 15(6): 899-910.
-Yao, L. & Yuan, Y. (2024) A unified method for detecting phylogenetic signals in continuous traits,
-discrete traits, and multi-trait combinations. (manuscript)
+Blomberg, S.P. & Garland, T., Jr (2002) Tempo and mode in evolution: phylogenetic inertia, adaptation and comparative methods. Journal of Evolutionary Biology, 15(6): 899-910.
+
+Yao, L. & Yuan, Y. (2024) A unified method for detecting phylogenetic signals in continuous traits, discrete traits, and multi-trait combinations. (manuscript)
 }
 \seealso{
 \code{\link[=M_rand_perm]{M_rand_perm()}} \code{\link[=phylosignal_M]{phylosignal_M()}}
