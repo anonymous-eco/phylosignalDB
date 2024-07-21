@@ -72,6 +72,7 @@ gower_dist <- function(x, type = list(),
 #' @references
 #'    Blomberg, S.P. & Garland, T., Jr (2002) Tempo and mode in evolution: phylogenetic inertia,
 #'    adaptation and comparative methods. Journal of Evolutionary Biology, 15(6): 899-910.
+#'
 #'    Yao, L. & Yuan, Y. (2024) A unified method for detecting phylogenetic signals in continuous traits,
 #'    discrete traits, and multi-trait combinations. (manuscript)
 #'
@@ -225,6 +226,7 @@ M_stat <- function(trait_dist = NULL, phy = NULL, auto_multi2di = TRUE){
 #' @references
 #'    Blomberg, S.P. & Garland, T., Jr (2002) Tempo and mode in evolution: phylogenetic inertia,
 #'    adaptation and comparative methods. Journal of Evolutionary Biology, 15(6): 899-910.
+#'
 #'    Yao, L. & Yuan, Y. (2024) A unified method for detecting phylogenetic signals in continuous traits,
 #'    discrete traits, and multi-trait combinations. (manuscript)
 #'
@@ -416,6 +418,7 @@ M_rand_perm <- function(trait_dist = NULL, phy = NULL, reps = 999, auto_multi2di
 #' @references
 #'    Blomberg, S.P. & Garland, T., Jr (2002) Tempo and mode in evolution: phylogenetic inertia,
 #'    adaptation and comparative methods. Journal of Evolutionary Biology, 15(6): 899-910.
+#'
 #'    Yao, L. & Yuan, Y. (2024) A unified method for detecting phylogenetic signals in continuous traits,
 #'    discrete traits, and multi-trait combinations. (manuscript)
 #'
