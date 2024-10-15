@@ -12,7 +12,7 @@ You can install the development version of phylosignalDB from [GitHub](https://g
 
 ``` r
 # install.packages("devtools")
-devtools::install_github("Dylan-Yao/phylosignalDB")
+devtools::install_github("anonymous-eco/phylosignalDB")
 ```
 
 ## Example
