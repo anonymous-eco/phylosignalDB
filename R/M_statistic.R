@@ -59,7 +59,6 @@ gower_dist <- function(x, type = list(),
 #' with the definition, instead of relying on correlation analysis or evolutionary models.
 #' The novel method equivalently expressed the textual definition of the phylogenetic signal
 #' as an inequality equation of the phylogenetic and trait distances and constructed the M statistic.
-#' For more details, please refer to Yao & Yuan (2024).
 #'
 #' @param trait_dist A distance object of class `matrix` or [dist].
 #'    Its row and column names should match the tip labels of the phylogenetic tree (`phy`).
@@ -72,7 +71,6 @@ gower_dist <- function(x, type = list(),
 #' @references
 #'    Blomberg, S.P. & Garland, T., Jr (2002) Tempo and mode in evolution: phylogenetic inertia, adaptation and comparative methods. Journal of Evolutionary Biology, 15(6): 899-910.
 #'
-#'    Yao, L. & Yuan, Y. (2024) A unified method for detecting phylogenetic signals in continuous traits, discrete traits, and multi-trait combinations. (manuscript)
 #'
 #' @seealso [M_rand_perm()] [phylosignal_M()]
 #' @examples
@@ -208,7 +206,6 @@ M_stat <- function(trait_dist = NULL, phy = NULL, auto_multi2di = TRUE){
 #' with the definition, instead of relying on correlation analysis or evolutionary models.
 #' The novel method equivalently expressed the textual definition of the phylogenetic signal
 #' as an inequality equation of the phylogenetic and trait distances and constructed the M statistic.
-#' For more details, please refer to Yao & Yuan (2024).
 #'
 #' @param trait_dist A distance object of class `matrix` or [dist].
 #'    Its row and column names should match the tip labels of the phylogenetic tree (`phy`).
@@ -224,7 +221,6 @@ M_stat <- function(trait_dist = NULL, phy = NULL, auto_multi2di = TRUE){
 #' @references
 #'    Blomberg, S.P. & Garland, T., Jr (2002) Tempo and mode in evolution: phylogenetic inertia, adaptation and comparative methods. Journal of Evolutionary Biology, 15(6): 899-910.
 #'
-#'    Yao, L. & Yuan, Y. (2024) A unified method for detecting phylogenetic signals in continuous traits, discrete traits, and multi-trait combinations. (manuscript)
 #'
 #' @seealso [M_stat()] [phylosignal_M()]
 #' @examples
@@ -395,7 +391,6 @@ M_rand_perm <- function(trait_dist = NULL, phy = NULL, reps = 999, auto_multi2di
 #' with the definition, instead of relying on correlation analysis or evolutionary models.
 #' The novel method equivalently expressed the textual definition of the phylogenetic signal
 #' as an inequality equation of the phylogenetic and trait distances and constructed the M statistic.
-#' For more details, please refer to Yao & Yuan (2024).
 #'
 #' @param trait_dist A distance object of class `matrix` or [dist].
 #'    Its row and column names should match the tip labels of the phylogenetic tree (`phy`).
@@ -414,7 +409,6 @@ M_rand_perm <- function(trait_dist = NULL, phy = NULL, reps = 999, auto_multi2di
 #' @references
 #'    Blomberg, S.P. & Garland, T., Jr (2002) Tempo and mode in evolution: phylogenetic inertia, adaptation and comparative methods. Journal of Evolutionary Biology, 15(6): 899-910.
 #'
-#'    Yao, L. & Yuan, Y. (2024) A unified method for detecting phylogenetic signals in continuous traits, discrete traits, and multi-trait combinations. (manuscript)
 #'
 #' @seealso [M_stat()] [M_rand_perm()]
 #' @examples
