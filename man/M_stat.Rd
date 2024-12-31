@@ -11,7 +11,7 @@ M_stat(trait_dist = NULL, phy = NULL, auto_multi2di = TRUE)
 Its row and column names should match the tip labels of the phylogenetic tree (\code{phy}).
 The functions \code{\link[=gower_dist]{gower_dist()}} and \code{\link[cluster:daisy]{cluster::daisy()}} can be used to calculate distances using trait data.}
 
-\item{phy}{A phylogenetic tree of class \link{phylo}, \link{phylo4} or \link{phylo4d}.}
+\item{phy}{A phylogenetic tree of class \link{phylo}.}
 
 \item{auto_multi2di}{A logical switch, \code{TRUE} or \code{FALSE}. Default is \code{TRUE},
 then function \code{\link[=multi2di]{multi2di()}} in \code{ape} package will be called to make the phylogeney (tree)
@@ -37,23 +37,23 @@ data("turtles")
 # Continuous trait
 trait_df <- data.frame(M1 = turtles$traits$M1, row.names = turtles$traits$specie)
 trait_dist <- gower_dist(x = trait_df)
-M_stat(trait_dist, turtles$phylo4)
+M_stat(trait_dist, turtles$phylo)
 
 # Nominal discrete trait
 trait_df <- data.frame(B1 = turtles$traits$B1, row.names = turtles$traits$specie)
 trait_dist <- gower_dist(x = trait_df, type = list(factor = 1))
-M_stat(trait_dist, turtles$phylo4)
+M_stat(trait_dist, turtles$phylo)
 
 # Ordinal discrete trait
 trait_df <- data.frame(CS1 = turtles$traits$CS1, row.names = turtles$traits$specie)
 trait_dist <- gower_dist(x = trait_df, type = list(ordered = 1))
-M_stat(trait_dist, turtles$phylo4)
+M_stat(trait_dist, turtles$phylo)
 
 # Multi-trait Combinations
 trait_df <- data.frame(turtles$traits[, c("M1", "M2", "M3", "M4", "M5")],
                        row.names = turtles$traits$specie)
 trait_dist <- gower_dist(x = trait_df, type = list(factor = c("M4", "M5")))
-M_stat(trait_dist, turtles$phylo4)
+M_stat(trait_dist, turtles$phylo)
 
 }
 \references{

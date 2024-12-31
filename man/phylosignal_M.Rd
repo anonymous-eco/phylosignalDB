@@ -9,7 +9,8 @@ phylosignal_M(
   phy = NULL,
   reps = 999,
   auto_multi2di = TRUE,
-  output_M_permuted = FALSE
+  output_M_permuted = FALSE,
+  cores = 1
 )
 }
 \arguments{
@@ -17,7 +18,7 @@ phylosignal_M(
 Its row and column names should match the tip labels of the phylogenetic tree (\code{phy}).
 The functions \code{\link[=gower_dist]{gower_dist()}} and \code{\link[cluster:daisy]{cluster::daisy()}} can be used to calculate distances using trait data.}
 
-\item{phy}{A phylogenetic tree of class \link{phylo}, \link{phylo4} or \link{phylo4d}.}
+\item{phy}{A phylogenetic tree of class \link{phylo}.}
 
 \item{reps}{An integer. The number of random permutations.}
 
@@ -28,6 +29,10 @@ be dichotomous if the tree (\code{phy}) contains some polytomies.}
 \item{output_M_permuted}{A logical switch, \code{TRUE} or \code{FALSE}. Default is \code{FALSE}.
 If this logical switch is set to \code{TRUE}, the returned list will include the vector
 of M values obtained after random permutations.}
+
+\item{cores}{Number of cores to be used in parallel processing.
+Default is 1, indicating no parallel computation is performed.
+If set to 0, parallel computation is executed using \code{parallel::detectCores() - 1} number of cores.}
 }
 \value{
 A list object containing two components.
@@ -53,23 +58,23 @@ data("turtles")
 # Continuous trait
 trait_df <- data.frame(M1 = turtles$traits$M1, row.names = turtles$traits$specie)
 trait_dist <- gower_dist(x = trait_df)
-phylosignal_M(trait_dist, turtles$phylo4, reps = 99) # reps=999 better
+phylosignal_M(trait_dist, turtles$phylo, reps = 99) # reps=999 better
 
 # Nominal discrete trait
 trait_df <- data.frame(B1 = turtles$traits$B1, row.names = turtles$traits$specie)
 trait_dist <- gower_dist(x = trait_df, type = list(factor = 1))
-phylosignal_M(trait_dist, turtles$phylo4, reps = 99) # reps=999 better
+phylosignal_M(trait_dist, turtles$phylo, reps = 99) # reps=999 better
 
 # Ordinal discrete trait
 trait_df <- data.frame(CS1 = turtles$traits$CS1, row.names = turtles$traits$specie)
 trait_dist <- gower_dist(x = trait_df, type = list(ordered = 1))
-phylosignal_M(trait_dist, turtles$phylo4, reps = 99) # reps=999 better
+phylosignal_M(trait_dist, turtles$phylo, reps = 99) # reps=999 better
 
 # Multi-trait Combinations
 trait_df <- data.frame(turtles$traits[, c("M1", "M2", "M3", "M4", "M5")],
                        row.names = turtles$traits$specie)
 trait_dist <- gower_dist(x = trait_df, type = list(factor = c("M4", "M5")))
-phylosignal_M(trait_dist, turtles$phylo4, reps = 99) # reps=999 better
+phylosignal_M(trait_dist, turtles$phylo, reps = 99) # reps=999 better
 
 }
 \references{

@@ -63,7 +63,7 @@ gower_dist <- function(x, type = list(),
 #' @param trait_dist A distance object of class `matrix` or [dist].
 #'    Its row and column names should match the tip labels of the phylogenetic tree (`phy`).
 #'    The functions [gower_dist()] and [cluster::daisy()] can be used to calculate distances using trait data.
-#' @param phy A phylogenetic tree of class [phylo], [phylo4] or [phylo4d].
+#' @param phy A phylogenetic tree of class [phylo].
 #' @param auto_multi2di A logical switch, `TRUE` or `FALSE`. Default is `TRUE`,
 #'    then function [multi2di()] in `ape` package will be called to make the phylogeney (tree)
 #'    be dichotomous if the tree (`phy`) contains some polytomies.
@@ -78,44 +78,42 @@ gower_dist <- function(x, type = list(),
 #' # Continuous trait
 #' trait_df <- data.frame(M1 = turtles$traits$M1, row.names = turtles$traits$specie)
 #' trait_dist <- gower_dist(x = trait_df)
-#' M_stat(trait_dist, turtles$phylo4)
+#' M_stat(trait_dist, turtles$phylo)
 #'
 #' # Nominal discrete trait
 #' trait_df <- data.frame(B1 = turtles$traits$B1, row.names = turtles$traits$specie)
 #' trait_dist <- gower_dist(x = trait_df, type = list(factor = 1))
-#' M_stat(trait_dist, turtles$phylo4)
+#' M_stat(trait_dist, turtles$phylo)
 #'
 #' # Ordinal discrete trait
 #' trait_df <- data.frame(CS1 = turtles$traits$CS1, row.names = turtles$traits$specie)
 #' trait_dist <- gower_dist(x = trait_df, type = list(ordered = 1))
-#' M_stat(trait_dist, turtles$phylo4)
+#' M_stat(trait_dist, turtles$phylo)
 #'
 #' # Multi-trait Combinations
 #' trait_df <- data.frame(turtles$traits[, c("M1", "M2", "M3", "M4", "M5")],
 #'                        row.names = turtles$traits$specie)
 #' trait_dist <- gower_dist(x = trait_df, type = list(factor = c("M4", "M5")))
-#' M_stat(trait_dist, turtles$phylo4)
+#' M_stat(trait_dist, turtles$phylo)
 #'
 #' @export
 M_stat <- function(trait_dist = NULL, phy = NULL, auto_multi2di = TRUE){
   if (length(phy)*length(trait_dist) == 0) {
     stop("The 'phy' and 'trait_dist' cannot be NULL.")
   }
-  if (TRUE %in% (c("phylo", "phylo4", "phylo4d") %in% class(phy))) {
-    phy <- as(phy, "phylo4")
-  } else {
-    stop("The 'phy' should be a phylogenetic tree of class 'phylo', 'phylo4' or 'phylo4d'.")
+  if (!("phylo" %in% class(phy))) {
+    stop("The 'phy' should be a phylogenetic tree of class 'phylo'.")
   }
-  if (!phylobase::isRooted(phy)) {
+  if (!ape::is.rooted(phy)) {
     stop("The 'phy' tree must be rooted.")
   }
-  if (!phylobase::isUltrametric(phy)) {
+  if (!ape::is.ultrametric(phy)) {
     stop("The 'phy' tree is not ultrametric such that all tips are at equal distance from the root node.")
   }
-  if (phylobase::hasPoly(phy)) {
+  if (!ape::is.binary(phy)) {
     if (auto_multi2di) {
       warning("The 'phy' tree contains some polytomies. Function multi2di() in ape package have been called to make phylogeney(tree) be dichotomous.", call. = FALSE)
-      phy <- as(ape::multi2di(as(phy, "phylo")), "phylo4")
+      phy <- ape::multi2di(phy)
     } else {
       stop("The 'phy' tree contains some polytomies. Function multi2di() in ape package maybe helpful. You also can set 'auto_multi2di' to be TRUE.")
     }
@@ -126,72 +124,54 @@ M_stat <- function(trait_dist = NULL, phy = NULL, auto_multi2di = TRUE){
   row_col_narm <- (colSums(data_dist, na.rm = TRUE) > 0)
   data_dist <- data_dist[row_col_narm, row_col_narm]
   # Prune the phylogenetic tree
-  label_vec <- phylobase::tipLabels(phy)
-  tips_keep <- label_vec[label_vec %in% rownames(data_dist)]
-  phy <- phylobase::subset(phy, tips.include = tips_keep)
-  S <- phylobase::nTips(phy)
-  label_vec <- phylobase::tipLabels(phy) # update the tip labels
+  phy <- castor::get_subtree_with_tips(tree = phy, only_tips = rownames(data_dist),
+                                       collapse_monofurcations = TRUE,
+                                       force_keep_root = FALSE)[["subtree"]]
+  phy$node.label <- as.character(sort(unique(phy$edge[,1])))
+  label_vec <- phy$tip.label
+  S <- length(phy$tip.label)
   # Sort data_dist/trait_dist by the naming and numbering according to phy's tips.
   data_dist <- data_dist[label_vec, label_vec]
-  # Create an index list of internal nodes.
-  internal_nodes <- phylobase::getNode(phy, type = "internal")
-  k <- NULL
-  nodes_info <- foreach::foreach(k=1:length(internal_nodes)) %do% {
-    temp_tips_id <- phylobase::descendants(phy, internal_nodes[k], type = "tips")
-    temp_tips_num <- length(temp_tips_id)
-    temp_tips_label <- names(temp_tips_id)
-    temp_child_nodes <- phylobase::children(phy, internal_nodes[k])
-    temp_child_tips_1left <- phylobase::descendants(phy, temp_child_nodes[1], type = "tips")
-    temp_child_tips_2right <- phylobase::descendants(phy, temp_child_nodes[2], type = "tips")
-    list(node_id = internal_nodes[k],
-         desc_tips_id = temp_tips_id,
-         desc_tips_num = temp_tips_num,
-         desc_tips_label = temp_tips_label,
-         child_nodes_id = temp_child_nodes,
-         child_tipsid_1left = temp_child_tips_1left,
-         child_tipsid_2right = temp_child_tips_2right)
-  }
-  names(nodes_info) <- as.character(internal_nodes)
+  # Get lists of internal nodes and tips about child nodes and descendant tips.
+  edge_vec <- as.character(phy$edge[,2])
+  names(edge_vec) <- as.character(phy$edge[,1])
+  child_nodes <- split(edge_vec, names(edge_vec))
+  descendant_tips_internal_nodes <- castor::get_subtrees_at_nodes(tree = phy,
+                                                                  nodes = phy$node.label)[["new2old_tips"]]
+  names(descendant_tips_internal_nodes) <- phy$node.label
+  tips_vec <- 1:(ape::Ntip(phy))
+  names(tips_vec) <- as.character(tips_vec)
+  descendant_tips <- c(descendant_tips_internal_nodes, as.list(tips_vec))
+
   # Filter out the internal nodes that have at least 3 tips as descendants.
-  kk <- NULL
-  rootnodes_subtree <- foreach::foreach(kk=1:length(internal_nodes), .combine = "c") %do% {
-    temp_node_info <- nodes_info[[as.character(internal_nodes[kk])]]
-    if (temp_node_info$desc_tips_num > 2) {
-      temp_node <- temp_node_info$node_id
-    } else {
-      temp_node <- NULL
-    }
-    temp_node
-  }
+  rootnodes_subtree <- names(descendant_tips)[unlist(lapply(descendant_tips, function(x) ifelse(length(x) > 2, TRUE, FALSE)))]
+  # subtree score
   N_subtree <- length(rootnodes_subtree)
-  # Assign equal weight to each subtree.
-  # w_vec <- rep(1/N_subtree, N_subtree)
-  # subtree_scores_0 <- rootnodes_subtree - rootnodes_subtree
-  # Calculate the M value of the observed sample data.
-  i <- NULL
-  M_subtree <- foreach::foreach(i=1:N_subtree, .combine="c") %do% {
-    temp_node_info <- nodes_info[[as.character(rootnodes_subtree[i])]]
-    dist_child1 <- as.vector(as.dist(data_dist[temp_node_info$child_tipsid_1left,
-                                               temp_node_info$child_tipsid_1left]))
-    dist_child2 <- as.vector(as.dist(data_dist[temp_node_info$child_tipsid_2right,
-                                               temp_node_info$child_tipsid_2right]))
-    dist_mix <- as.vector(data_dist[temp_node_info$child_tipsid_1left,
-                                    temp_node_info$child_tipsid_2right])
-    average_child1 <- ifelse(length(dist_child1) > 0, mean(dist_child1, na.rm = TRUE), 0)
-    average_child2 <- ifelse(length(dist_child2) > 0, mean(dist_child2, na.rm = TRUE), 0)
+  score_subtree <- rep(NA, N_subtree)
+  names(score_subtree) <- rootnodes_subtree
+  for (i in 1:N_subtree) {
+    node_two <- child_nodes[[rootnodes_subtree[i]]]
+    if (length(descendant_tips[[node_two[1]]]) > 1) {
+      dist_child1 <- data_dist[descendant_tips[[node_two[1]]],descendant_tips[[node_two[1]]]]
+      dist_child1 <- dist_child1[upper.tri(dist_child1)]
+      average_child1 <- mean(dist_child1, na.rm = TRUE)
+    } else {average_child1 <- 0}
+    if (length(descendant_tips[[node_two[2]]]) > 1) {
+      dist_child2 <- data_dist[descendant_tips[[node_two[2]]],descendant_tips[[node_two[2]]]]
+      dist_child2 <- dist_child2[upper.tri(dist_child2)]
+      average_child2 <- mean(dist_child2, na.rm = TRUE)
+    } else {average_child2 <- 0}
+    dist_mix <- data_dist[descendant_tips[[node_two[1]]], descendant_tips[[node_two[2]]]]
     average_mix <- mean(dist_mix, na.rm = TRUE)
-    if (TRUE %in% is.na(c(average_child1, average_child2, average_mix))) {
-      subtree_score <- NULL # The subtree is invalid, too much NA values.
-    } else {
-      subtree_score <- ifelse(average_mix >= average_child1, 0.5, 0) +
-                       ifelse(average_mix >= average_child2, 0.5, 0)
-    }
-    subtree_score
+
+    score_subtree[i] <- ifelse(average_mix >= average_child1, 0.5, 0) +
+      ifelse(average_mix >= average_child2, 0.5, 0)
   }
-  M_obs <- mean(M_subtree, na.rm = TRUE)
+  M_obs <- mean(score_subtree, na.rm = TRUE)
   names(M_obs) <- "M_stat"
   return(M_obs)
 }
+
 
 #' Calculate M statistics after random permutations
 #'
@@ -210,11 +190,14 @@ M_stat <- function(trait_dist = NULL, phy = NULL, auto_multi2di = TRUE){
 #' @param trait_dist A distance object of class `matrix` or [dist].
 #'    Its row and column names should match the tip labels of the phylogenetic tree (`phy`).
 #'    The functions [gower_dist()] and [cluster::daisy()] can be used to calculate distances using trait data.
-#' @param phy A phylogenetic tree of class [phylo], [phylo4] or [phylo4d].
+#' @param phy A phylogenetic tree of class [phylo].
 #' @param reps An integer. The number of random permutations.
 #' @param auto_multi2di A logical switch, `TRUE` or `FALSE`. Default is `TRUE`,
 #'    then function [multi2di()] in `ape` package will be called to make the phylogeney (tree)
 #'    be dichotomous if the tree (`phy`) contains some polytomies.
+#' @param cores Number of cores to be used in parallel processing.
+#' Default is 1, indicating no parallel computation is performed.
+#' If set to 0, parallel computation is executed using `parallel::detectCores() - 1` number of cores.
 #' @returns A list object containing two components.
 #'    Component `$permuted` is the vector of M values obtained after random permutation for `reps` times;
 #'    component `$observed` is the value of M statistic obtained from the original input data.
@@ -228,26 +211,27 @@ M_stat <- function(trait_dist = NULL, phy = NULL, auto_multi2di = TRUE){
 #' # Continuous trait
 #' trait_df <- data.frame(M1 = turtles$traits$M1, row.names = turtles$traits$specie)
 #' trait_dist <- gower_dist(x = trait_df)
-#' M_rand_perm(trait_dist, turtles$phylo4, reps = 99) # reps=999 better
+#' M_rand_perm(trait_dist, turtles$phylo, reps = 99) # reps=999 better
 #'
 #' # Nominal discrete trait
 #' trait_df <- data.frame(B1 = turtles$traits$B1, row.names = turtles$traits$specie)
 #' trait_dist <- gower_dist(x = trait_df, type = list(factor = 1))
-#' M_rand_perm(trait_dist, turtles$phylo4, reps = 99) # reps=999 better
+#' M_rand_perm(trait_dist, turtles$phylo, reps = 99) # reps=999 better
 #'
 #' # Ordinal discrete trait
 #' trait_df <- data.frame(CS1 = turtles$traits$CS1, row.names = turtles$traits$specie)
 #' trait_dist <- gower_dist(x = trait_df, type = list(ordered = 1))
-#' M_rand_perm(trait_dist, turtles$phylo4, reps = 99) # reps=999 better
+#' M_rand_perm(trait_dist, turtles$phylo, reps = 99) # reps=999 better
 #'
 #' # Multi-trait Combinations
 #' trait_df <- data.frame(turtles$traits[, c("M1", "M2", "M3", "M4", "M5")],
 #'                        row.names = turtles$traits$specie)
 #' trait_dist <- gower_dist(x = trait_df, type = list(factor = c("M4", "M5")))
-#' M_rand_perm(trait_dist, turtles$phylo4, reps = 99) # reps=999 better
+#' M_rand_perm(trait_dist, turtles$phylo, reps = 99) # reps=999 better
 #'
 #' @export
-M_rand_perm <- function(trait_dist = NULL, phy = NULL, reps = 999, auto_multi2di = TRUE){
+M_rand_perm <- function(trait_dist = NULL, phy = NULL, reps = 999, auto_multi2di = TRUE,
+                        cores = 1){
   if (length(phy)*length(trait_dist) == 0) {
     stop("The 'phy' and 'trait_dist' cannot be NULL.")
   }
@@ -258,21 +242,22 @@ M_rand_perm <- function(trait_dist = NULL, phy = NULL, reps = 999, auto_multi2di
   } else {
     reps <- round(reps) # coerce to a positive integer
   }
-  if (TRUE %in% (c("phylo", "phylo4", "phylo4d") %in% class(phy))) {
-    phy <- as(phy, "phylo4")
-  } else {
-    stop("The 'phy' should be a phylogenetic tree of class 'phylo', 'phylo4' or 'phylo4d'.")
+  if (FALSE %in% (cores %in% c(1, 0))) {
+    stop("The 'cores' must be 1 (no parallel computation) or 0 (parallel computation).")
   }
-  if (!phylobase::isRooted(phy)) {
+  if (!("phylo" %in% class(phy))) {
+    stop("The 'phy' should be a phylogenetic tree of class 'phylo'.")
+  }
+  if (!ape::is.rooted(phy)) {
     stop("The 'phy' tree must be rooted.")
   }
-  if (!phylobase::isUltrametric(phy)) {
+  if (!ape::is.ultrametric(phy)) {
     stop("The 'phy' tree is not ultrametric such that all tips are at equal distance from the root node.")
   }
-  if (phylobase::hasPoly(phy)) {
+  if (!ape::is.binary(phy)) {
     if (auto_multi2di) {
       warning("The 'phy' tree contains some polytomies. Function multi2di() in ape package have been called to make phylogeney(tree) be dichotomous.", call. = FALSE)
-      phy <- as(ape::multi2di(as(phy, "phylo")), "phylo4")
+      phy <- ape::multi2di(phy)
     } else {
       stop("The 'phy' tree contains some polytomies. Function multi2di() in ape package maybe helpful. You also can set 'auto_multi2di' to be TRUE.")
     }
@@ -283,97 +268,116 @@ M_rand_perm <- function(trait_dist = NULL, phy = NULL, reps = 999, auto_multi2di
   row_col_narm <- (colSums(data_dist, na.rm = TRUE) > 0)
   data_dist <- data_dist[row_col_narm, row_col_narm]
   # Prune the phylogenetic tree
-  label_vec <- phylobase::tipLabels(phy)
-  tips_keep <- label_vec[label_vec %in% rownames(data_dist)]
-  phy <- phylobase::subset(phy, tips.include = tips_keep)
-  S <- phylobase::nTips(phy)
-  label_vec <- phylobase::tipLabels(phy) # update the tip labels
-  # Sort data_dist/trait_dist by the naming and numbering according to phy's tips
+  phy <- castor::get_subtree_with_tips(tree = phy, only_tips = rownames(data_dist),
+                                       collapse_monofurcations = TRUE,
+                                       force_keep_root = FALSE)[["subtree"]]
+  phy$node.label <- as.character(sort(unique(phy$edge[,1])))
+  label_vec <- phy$tip.label
+  S <- ape::Ntip(phy)
+  # Sort data_dist/trait_dist by the naming and numbering according to phy's tips.
   data_dist <- data_dist[label_vec, label_vec]
-  # Create an index list of internal nodes
-  internal_nodes <- phylobase::getNode(phy, type = "internal")
-  k <- NULL
-  nodes_info <- foreach::foreach(k=1:length(internal_nodes)) %do% {
-    temp_tips_id <- phylobase::descendants(phy, internal_nodes[k], type = "tips")
-    temp_tips_num <- length(temp_tips_id)
-    temp_tips_label <- names(temp_tips_id)
-    temp_child_nodes <- phylobase::children(phy, internal_nodes[k])
-    temp_child_tips_1left <- phylobase::descendants(phy, temp_child_nodes[1], type = "tips")
-    temp_child_tips_2right <- phylobase::descendants(phy, temp_child_nodes[2], type = "tips")
-    list(node_id = internal_nodes[k],
-         desc_tips_id = temp_tips_id,
-         desc_tips_num = temp_tips_num,
-         desc_tips_label = temp_tips_label,
-         child_nodes_id = temp_child_nodes,
-         child_tipsid_1left = temp_child_tips_1left,
-         child_tipsid_2right = temp_child_tips_2right)
-  }
-  names(nodes_info) <- as.character(internal_nodes)
-  # Filter out the internal nodes that have at least 3 tips as descendants
-  kk <- NULL
-  rootnodes_subtree <- foreach::foreach(kk=1:length(internal_nodes), .combine = "c") %do% {
-    temp_node_info <- nodes_info[[as.character(internal_nodes[kk])]]
-    if (temp_node_info$desc_tips_num > 2) {
-      temp_node <- temp_node_info$node_id
-    } else {
-      temp_node <- NULL
-    }
-    temp_node
-  }
+
+  # Get lists of internal nodes and tips about child nodes and descendant tips.
+  edge_vec <- as.character(phy$edge[,2])
+  names(edge_vec) <- as.character(phy$edge[,1])
+  child_nodes <- split(edge_vec, names(edge_vec))
+  descendant_tips_internal_nodes <- castor::get_subtrees_at_nodes(tree = phy,
+                                                                  nodes = phy$node.label)[["new2old_tips"]]
+  names(descendant_tips_internal_nodes) <- phy$node.label
+  tips_vec <- 1:S
+  names(tips_vec) <- as.character(tips_vec)
+  descendant_tips <- c(descendant_tips_internal_nodes, as.list(tips_vec))
+
+  num_descendant_tips <- unlist(lapply(descendant_tips, function(x) length(x)))
+  # Filter out the internal nodes that have at least 3 tips as descendants.
+  rootnodes_subtree <- names(descendant_tips)[unlist(lapply(descendant_tips, function(x) ifelse(length(x) > 2, TRUE, FALSE)))]
+
+  num_tips_sampled <- round(mean(num_descendant_tips[rootnodes_subtree]))
+
+  # subtree score
   N_subtree <- length(rootnodes_subtree)
-  # Assign equal weight to each subtree.
-  # w_vec <- rep(1/N_subtree, N_subtree)
-  # subtree_scores_0 <- rootnodes_subtree - rootnodes_subtree
-  # Calculate the M value of the observed sample data.
-  i <- NULL
-  M_obs_subtree <- foreach::foreach(i=1:N_subtree, .combine="c") %do% {
-    temp_node_info <- nodes_info[[as.character(rootnodes_subtree[i])]]
-    dist_child1 <- as.vector(as.dist(data_dist[temp_node_info$child_tipsid_1left,
-                                               temp_node_info$child_tipsid_1left]))
-    dist_child2 <- as.vector(as.dist(data_dist[temp_node_info$child_tipsid_2right,
-                                               temp_node_info$child_tipsid_2right]))
-    dist_mix <- as.vector(data_dist[temp_node_info$child_tipsid_1left,
-                                    temp_node_info$child_tipsid_2right])
-    average_child1 <- ifelse(length(dist_child1) > 0, mean(dist_child1, na.rm = TRUE), 0)
-    average_child2 <- ifelse(length(dist_child2) > 0, mean(dist_child2, na.rm = TRUE), 0)
+  score_subtree <- rep(NA, N_subtree)
+  names(score_subtree) <- rootnodes_subtree
+  for (i in 1:N_subtree) {
+    node_two <- child_nodes[[rootnodes_subtree[i]]]
+    if (length(descendant_tips[[node_two[1]]]) > 1) {
+      dist_child1 <- data_dist[descendant_tips[[node_two[1]]],descendant_tips[[node_two[1]]]]
+      dist_child1 <- dist_child1[upper.tri(dist_child1)]
+      average_child1 <- mean(dist_child1, na.rm = TRUE)
+    } else {average_child1 <- 0}
+    if (length(descendant_tips[[node_two[2]]]) > 1) {
+      dist_child2 <- data_dist[descendant_tips[[node_two[2]]],descendant_tips[[node_two[2]]]]
+      dist_child2 <- dist_child2[upper.tri(dist_child2)]
+      average_child2 <- mean(dist_child2, na.rm = TRUE)
+    } else {average_child2 <- 0}
+    dist_mix <- data_dist[descendant_tips[[node_two[1]]], descendant_tips[[node_two[2]]]]
     average_mix <- mean(dist_mix, na.rm = TRUE)
-    if (TRUE %in% is.na(c(average_child1, average_child2, average_mix))) {
-      subtree_score <- NULL # The subtree is invalid, too much NA values.
-    } else {
-      subtree_score <- ifelse(average_mix >= average_child1, 0.5, 0) +
-                       ifelse(average_mix >= average_child2, 0.5, 0)
-    }
-    subtree_score
+
+    score_subtree[i] <- ifelse(average_mix >= average_child1, 0.5, 0) +
+      ifelse(average_mix >= average_child2, 0.5, 0)
   }
-  M_obs <- mean(M_obs_subtree, na.rm = TRUE)
+  M_obs <- mean(score_subtree, na.rm = TRUE)
   # Calculate the simulated M values for random permutations, reps times.
-  j <- NULL
-  M_reps <- foreach::foreach(j = 1:reps, .combine = "c") %do% {
-    each_perm <- sample(1:S, size = S)
-    data_dist_perm <- data_dist[each_perm, each_perm]
-    kkk <- NULL
-    M_perm_subtree <- foreach::foreach(kkk=1:N_subtree, .combine="c") %do% {
-      temp_node_info <- nodes_info[[as.character(rootnodes_subtree[kkk])]]
-      dist_child1 <- as.vector(as.dist(data_dist_perm[temp_node_info$child_tipsid_1left,
-                                                      temp_node_info$child_tipsid_1left]))
-      dist_child2 <- as.vector(as.dist(data_dist_perm[temp_node_info$child_tipsid_2right,
-                                                      temp_node_info$child_tipsid_2right]))
-      dist_mix <- as.vector(data_dist_perm[temp_node_info$child_tipsid_1left,
-                                           temp_node_info$child_tipsid_2right])
-      average_child1 <- ifelse(length(dist_child1) > 0, mean(dist_child1, na.rm = TRUE), 0)
-      average_child2 <- ifelse(length(dist_child2) > 0, mean(dist_child2, na.rm = TRUE), 0)
-      average_mix <- mean(dist_mix, na.rm = TRUE)
-      if (TRUE %in% is.na(c(average_child1, average_child2, average_mix))) {
-        subtree_score <- NULL # The subtree is invalid, too much NA values.
-      } else {
-        subtree_score <- ifelse(average_mix >= average_child1, 0.5, 0) +
-                         ifelse(average_mix >= average_child2, 0.5, 0)
+  if (cores == 1) { # no parallel computation
+    M_perm <- rep(NA, reps)
+    for (j in 1:reps) {
+      each_perm <- sample(1:S, size = S)
+      data_dist_perm <- data_dist[each_perm, each_perm]
+
+      score_subtree <- rep(NA, N_subtree)
+      names(score_subtree) <- rootnodes_subtree
+      for (i in 1:N_subtree) {
+        node_two <- child_nodes[[rootnodes_subtree[i]]]
+        if (length(descendant_tips[[node_two[1]]]) > 1) {
+          dist_child1 <- data_dist_perm[descendant_tips[[node_two[1]]],descendant_tips[[node_two[1]]]]
+          dist_child1 <- dist_child1[upper.tri(dist_child1)]
+          average_child1 <- mean(dist_child1, na.rm = TRUE)
+        } else {average_child1 <- 0}
+        if (length(descendant_tips[[node_two[2]]]) > 1) {
+          dist_child2 <- data_dist_perm[descendant_tips[[node_two[2]]],descendant_tips[[node_two[2]]]]
+          dist_child2 <- dist_child2[upper.tri(dist_child2)]
+          average_child2 <- mean(dist_child2, na.rm = TRUE)
+        } else {average_child2 <- 0}
+        dist_mix <- data_dist_perm[descendant_tips[[node_two[1]]], descendant_tips[[node_two[2]]]]
+        average_mix <- mean(dist_mix, na.rm = TRUE)
+        score_subtree[i] <- ifelse(average_mix >= average_child1, 0.5, 0) +
+          ifelse(average_mix >= average_child2, 0.5, 0)
       }
-      subtree_score
+      M_perm[j] <- mean(score_subtree, na.rm = TRUE)
     }
-    mean(M_perm_subtree, na.rm = TRUE)
   }
-  return(list(M_permuted = M_reps,
+  if (cores == 0) { # parallel computation
+    cl <- parallel::makeCluster(parallel::detectCores() - 1)
+    doParallel::registerDoParallel(cl)
+    k <- NULL
+    M_perm <- foreach::foreach(k = 1:reps, .combine = "c") %dopar% {
+      each_perm <- sample(1:S, size = S)
+      data_dist_perm <- data_dist[each_perm, each_perm]
+      score_subtree <- rep(NA, N_subtree)
+      names(score_subtree) <- rootnodes_subtree
+      i <- NULL
+      for (i in 1:N_subtree) {
+        node_two <- child_nodes[[rootnodes_subtree[i]]]
+        if (length(descendant_tips[[node_two[1]]]) > 1) {
+          dist_child1 <- data_dist_perm[descendant_tips[[node_two[1]]],descendant_tips[[node_two[1]]]]
+          dist_child1 <- dist_child1[upper.tri(dist_child1)]
+          average_child1 <- mean(dist_child1, na.rm = TRUE)
+        } else {average_child1 <- 0}
+        if (length(descendant_tips[[node_two[2]]]) > 1) {
+          dist_child2 <- data_dist_perm[descendant_tips[[node_two[2]]],descendant_tips[[node_two[2]]]]
+          dist_child2 <- dist_child2[upper.tri(dist_child2)]
+          average_child2 <- mean(dist_child2, na.rm = TRUE)
+        } else {average_child2 <- 0}
+        dist_mix <- data_dist_perm[descendant_tips[[node_two[1]]], descendant_tips[[node_two[2]]]]
+        average_mix <- mean(dist_mix, na.rm = TRUE)
+        score_subtree[i] <- ifelse(average_mix >= average_child1, 0.5, 0) +
+          ifelse(average_mix >= average_child2, 0.5, 0)
+      }
+      mean(score_subtree, na.rm = TRUE)
+    }
+    parallel::stopCluster(cl)
+  }
+  return(list(M_permuted = M_perm,
               M_observed = M_obs))
 }
 
@@ -395,7 +399,7 @@ M_rand_perm <- function(trait_dist = NULL, phy = NULL, reps = 999, auto_multi2di
 #' @param trait_dist A distance object of class `matrix` or [dist].
 #'    Its row and column names should match the tip labels of the phylogenetic tree (`phy`).
 #'    The functions [gower_dist()] and [cluster::daisy()] can be used to calculate distances using trait data.
-#' @param phy A phylogenetic tree of class [phylo], [phylo4] or [phylo4d].
+#' @param phy A phylogenetic tree of class [phylo].
 #' @param reps An integer. The number of random permutations.
 #' @param auto_multi2di A logical switch, `TRUE` or `FALSE`. Default is `TRUE`,
 #'    then function [multi2di()] in `ape` package will be called to make the phylogeney (tree)
@@ -403,6 +407,9 @@ M_rand_perm <- function(trait_dist = NULL, phy = NULL, reps = 999, auto_multi2di
 #' @param output_M_permuted A logical switch, `TRUE` or `FALSE`. Default is `FALSE`.
 #'    If this logical switch is set to `TRUE`, the returned list will include the vector
 #'    of M values obtained after random permutations.
+#' @param cores Number of cores to be used in parallel processing.
+#'    Default is 1, indicating no parallel computation is performed.
+#'    If set to 0, parallel computation is executed using `parallel::detectCores() - 1` number of cores.
 #' @returns A list object containing two components.
 #'    Component `$permuted` is the vector of M values obtained after random permutation for `reps` times;
 #'    component `$observed` is the value of M statistic obtained from the original input data.
@@ -416,28 +423,28 @@ M_rand_perm <- function(trait_dist = NULL, phy = NULL, reps = 999, auto_multi2di
 #' # Continuous trait
 #' trait_df <- data.frame(M1 = turtles$traits$M1, row.names = turtles$traits$specie)
 #' trait_dist <- gower_dist(x = trait_df)
-#' phylosignal_M(trait_dist, turtles$phylo4, reps = 99) # reps=999 better
+#' phylosignal_M(trait_dist, turtles$phylo, reps = 99) # reps=999 better
 #'
 #' # Nominal discrete trait
 #' trait_df <- data.frame(B1 = turtles$traits$B1, row.names = turtles$traits$specie)
 #' trait_dist <- gower_dist(x = trait_df, type = list(factor = 1))
-#' phylosignal_M(trait_dist, turtles$phylo4, reps = 99) # reps=999 better
+#' phylosignal_M(trait_dist, turtles$phylo, reps = 99) # reps=999 better
 #'
 #' # Ordinal discrete trait
 #' trait_df <- data.frame(CS1 = turtles$traits$CS1, row.names = turtles$traits$specie)
 #' trait_dist <- gower_dist(x = trait_df, type = list(ordered = 1))
-#' phylosignal_M(trait_dist, turtles$phylo4, reps = 99) # reps=999 better
+#' phylosignal_M(trait_dist, turtles$phylo, reps = 99) # reps=999 better
 #'
 #' # Multi-trait Combinations
 #' trait_df <- data.frame(turtles$traits[, c("M1", "M2", "M3", "M4", "M5")],
 #'                        row.names = turtles$traits$specie)
 #' trait_dist <- gower_dist(x = trait_df, type = list(factor = c("M4", "M5")))
-#' phylosignal_M(trait_dist, turtles$phylo4, reps = 99) # reps=999 better
+#' phylosignal_M(trait_dist, turtles$phylo, reps = 99) # reps=999 better
 #'
 #' @export
 phylosignal_M <- function(trait_dist = NULL, phy = NULL, reps = 999,
-                          auto_multi2di = TRUE,
-                          output_M_permuted = FALSE) {
+                              auto_multi2di = TRUE, output_M_permuted = FALSE,
+                              cores = 1) {
   if (length(phy)*length(trait_dist) == 0) {
     stop("The 'phy' and 'trait_dist' cannot be NULL.")
   }
@@ -448,30 +455,32 @@ phylosignal_M <- function(trait_dist = NULL, phy = NULL, reps = 999,
   } else {
     reps <- round(reps) # coerce to a positive integer
   }
-  if (!is.logical(output_M_permuted)) {
-    stop("The 'output_M_permuted' must be a logical value (TRUE or FALSE).")
+  if (FALSE %in% (cores %in% c(1, 0))) {
+    stop("The 'cores' must be 1 (no parallel computation) or 0 (parallel computation).")
   }
-  if (TRUE %in% (c("phylo", "phylo4", "phylo4d") %in% class(phy))) {
-    phy <- as(phy, "phylo4")
-  } else {
-    stop("The 'phy' should be a phylogenetic tree of class 'phylo', 'phylo4' or 'phylo4d'.")
+  if (!("phylo" %in% class(phy))) {
+    stop("The 'phy' should be a phylogenetic tree of class 'phylo'.")
   }
-  if (!phylobase::isRooted(phy)) {
+  if (!ape::is.rooted(phy)) {
     stop("The 'phy' tree must be rooted.")
   }
-  if (!phylobase::isUltrametric(phy)) {
+  if (!ape::is.ultrametric(phy)) {
     stop("The 'phy' tree is not ultrametric such that all tips are at equal distance from the root node.")
   }
-  if (phylobase::hasPoly(phy)) {
+  if (!ape::is.binary(phy)) {
     if (auto_multi2di) {
       warning("The 'phy' tree contains some polytomies. Function multi2di() in ape package have been called to make phylogeney(tree) be dichotomous.", call. = FALSE)
-      phy <- as(ape::multi2di(as(phy, "phylo")), "phylo4")
+      phy <- ape::multi2di(phy)
     } else {
       stop("The 'phy' tree contains some polytomies. Function multi2di() in ape package maybe helpful. You also can set 'auto_multi2di' to be TRUE.")
     }
   }
+  if (!is.logical(output_M_permuted)) {
+    stop("The 'output_M_permuted' must be FALSE or TRUE.")
+  }
   M_perm <- M_rand_perm(trait_dist = trait_dist, phy = phy,
-                        reps = reps)
+                        reps = reps, auto_multi2di = auto_multi2di,
+                        cores = cores)
   M_observed <- M_perm$M_observed
   M_permuted <- M_perm$M_permuted
   # The rank() in ascending order handles ties more freely than the order().
@@ -491,9 +500,3 @@ phylosignal_M <- function(trait_dist = NULL, phy = NULL, reps = 999,
   }
   return(result)
 }
-
-
-
-
-
-

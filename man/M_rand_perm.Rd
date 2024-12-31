@@ -4,20 +4,30 @@
 \alias{M_rand_perm}
 \title{Calculate M statistics after random permutations}
 \usage{
-M_rand_perm(trait_dist = NULL, phy = NULL, reps = 999, auto_multi2di = TRUE)
+M_rand_perm(
+  trait_dist = NULL,
+  phy = NULL,
+  reps = 999,
+  auto_multi2di = TRUE,
+  cores = 1
+)
 }
 \arguments{
 \item{trait_dist}{A distance object of class \code{matrix} or \link{dist}.
 Its row and column names should match the tip labels of the phylogenetic tree (\code{phy}).
 The functions \code{\link[=gower_dist]{gower_dist()}} and \code{\link[cluster:daisy]{cluster::daisy()}} can be used to calculate distances using trait data.}
 
-\item{phy}{A phylogenetic tree of class \link{phylo}, \link{phylo4} or \link{phylo4d}.}
+\item{phy}{A phylogenetic tree of class \link{phylo}.}
 
 \item{reps}{An integer. The number of random permutations.}
 
 \item{auto_multi2di}{A logical switch, \code{TRUE} or \code{FALSE}. Default is \code{TRUE},
 then function \code{\link[=multi2di]{multi2di()}} in \code{ape} package will be called to make the phylogeney (tree)
 be dichotomous if the tree (\code{phy}) contains some polytomies.}
+
+\item{cores}{Number of cores to be used in parallel processing.
+Default is 1, indicating no parallel computation is performed.
+If set to 0, parallel computation is executed using \code{parallel::detectCores() - 1} number of cores.}
 }
 \value{
 A list object containing two components.
@@ -42,23 +52,23 @@ data("turtles")
 # Continuous trait
 trait_df <- data.frame(M1 = turtles$traits$M1, row.names = turtles$traits$specie)
 trait_dist <- gower_dist(x = trait_df)
-M_rand_perm(trait_dist, turtles$phylo4, reps = 99) # reps=999 better
+M_rand_perm(trait_dist, turtles$phylo, reps = 99) # reps=999 better
 
 # Nominal discrete trait
 trait_df <- data.frame(B1 = turtles$traits$B1, row.names = turtles$traits$specie)
 trait_dist <- gower_dist(x = trait_df, type = list(factor = 1))
-M_rand_perm(trait_dist, turtles$phylo4, reps = 99) # reps=999 better
+M_rand_perm(trait_dist, turtles$phylo, reps = 99) # reps=999 better
 
 # Ordinal discrete trait
 trait_df <- data.frame(CS1 = turtles$traits$CS1, row.names = turtles$traits$specie)
 trait_dist <- gower_dist(x = trait_df, type = list(ordered = 1))
-M_rand_perm(trait_dist, turtles$phylo4, reps = 99) # reps=999 better
+M_rand_perm(trait_dist, turtles$phylo, reps = 99) # reps=999 better
 
 # Multi-trait Combinations
 trait_df <- data.frame(turtles$traits[, c("M1", "M2", "M3", "M4", "M5")],
                        row.names = turtles$traits$specie)
 trait_dist <- gower_dist(x = trait_df, type = list(factor = c("M4", "M5")))
-M_rand_perm(trait_dist, turtles$phylo4, reps = 99) # reps=999 better
+M_rand_perm(trait_dist, turtles$phylo, reps = 99) # reps=999 better
 
 }
 \references{

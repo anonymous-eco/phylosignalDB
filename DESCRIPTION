@@ -24,10 +24,9 @@ Depends:
 LazyData: true
 Imports: 
     ape (>= 5.7),
+    castor (>= 1.8.3),
     cluster (>= 2.1.6),
-    foreach (>= 1.5.2),
-    methods,
-    phylobase (>= 0.8.12),
-    stats
+    doParallel (>= 1.0.17),
+    foreach (>= 1.5.2)
 URL: https://github.com/anonymous-eco/phylosignalDB
 BugReports: https://github.com/anonymous-eco/phylosignalDB/issues
